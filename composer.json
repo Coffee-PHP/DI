@@ -1,0 +1,46 @@
+{
+	"name": "coffeephp/di",
+	"description": "Provides a PSR-compliant container implementation for dependency injection.",
+	"license": "Apache-2.0",
+	"authors": [
+		{
+			"name": "Danny Damsky",
+			"email": "dannydamsky99@gmail.com"
+		}
+	],
+	"keywords": [
+		"coffeephp",
+		"coffee",
+		"php",
+		"psr",
+		"container",
+		"dependency",
+		"injection",
+		"di"
+	],
+	"require": {
+		"php": ">=7.4",
+		"ext-apcu": "*",
+		"psr/container": "*"
+	},
+	"require-dev": {
+		"roave/security-advisories": "dev-master",
+		"phpunit/phpunit": "9.*"
+	},
+	"autoload": {
+		"psr-4": {
+			"CoffeePhp\\Di\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"CoffeePhp\\Di\\Test\\Mock\\": "test/Mock/",
+			"CoffeePhp\\Di\\Test\\Unit\\": "test/Unit/"
+		}
+	},
+	"config": {
+		"sort-packages": true,
+		"optimize-autoloader": true,
+		"apcu-autoloader": true
+	}
+}
