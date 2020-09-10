@@ -213,6 +213,7 @@ final class Container extends AbstractContainer
     {
         $class = new ReflectionClass($implementation);
         if (
+            $class->isAbstract() &&
             !$class->isInstantiable() &&
             ($class = $this->getReflectionClassFromAbstraction($class)) === null
         ) {
