@@ -1,46 +1,63 @@
 {
-	"name": "coffeephp/di",
-	"description": "Provides a PSR-compliant container implementation for dependency injection.",
-	"license": "Apache-2.0",
-	"authors": [
-		{
-			"name": "Danny Damsky",
-			"email": "dannydamsky99@gmail.com"
-		}
-	],
-	"keywords": [
-		"coffeephp",
-		"coffee",
-		"php",
-		"psr",
-		"container",
-		"dependency",
-		"injection",
-		"di"
-	],
-	"require": {
-		"php": ">=7.4",
-		"ext-apcu": "*",
-		"psr/container": "*"
-	},
-	"require-dev": {
-		"roave/security-advisories": "dev-master",
-		"phpunit/phpunit": "9.*"
-	},
-	"autoload": {
-		"psr-4": {
-			"CoffeePhp\\Di\\": "src/"
-		}
-	},
-	"autoload-dev": {
-		"psr-4": {
-			"CoffeePhp\\Di\\Test\\Mock\\": "test/Mock/",
-			"CoffeePhp\\Di\\Test\\Unit\\": "test/Unit/"
-		}
-	},
-	"config": {
-		"sort-packages": true,
-		"optimize-autoloader": true,
-		"apcu-autoloader": true
-	}
+    "name": "coffeephp/di",
+    "description": "Provides a PSR-compliant container implementation for dependency injection.",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Danny Damsky",
+            "email": "dannydamsky99@gmail.com"
+        }
+    ],
+    "keywords": [
+        "coffeephp",
+        "coffee",
+        "php",
+        "psr",
+        "container",
+        "dependency",
+        "injection",
+        "di"
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-apcu": "*",
+        "psr/container": "*"
+    },
+    "require-dev": {
+        "coffeephp/quality-tools": "1.*",
+        "roave/security-advisories": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "CoffeePhp\\Di\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CoffeePhp\\Di\\Test\\Mock\\": "test/Mock/",
+            "CoffeePhp\\Di\\Test\\Unit\\": "test/Unit/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "apcu-autoloader": true
+    },
+    "scripts": {
+        "coffeephp:exec:phpcbf": "coffeephp_exec_phpcbf",
+        "coffeephp:exec:phpcs": "coffeephp_exec_phpcs",
+        "coffeephp:exec:phpmd": "coffeephp_exec_phpmd",
+        "coffeephp:exec:phpstan-analyse": "coffeephp_exec_phpstan_analyse",
+        "coffeephp:exec:phpunit": "coffeephp_exec_phpunit --testsuite unit,integration",
+        "coffeephp:exec:psalm": "coffeephp_exec_psalm",
+        "coffeephp:exec:psalm-alter": "coffeephp_exec_psalm_alter",
+        "coffeephp:exec:publish": "coffeephp_exec_publish",
+        "coffeephp:exec:analyse": [
+            "@coffeephp:exec:phpunit",
+            "@coffeephp:exec:psalm",
+            "@coffeephp:exec:phpcs",
+            "@coffeephp:exec:phpstan-analyse",
+            "@coffeephp:exec:phpmd"
+        ]
+    }
 }

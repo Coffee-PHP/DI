@@ -21,10 +21,9 @@
  * @since 2020-07-15
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di;
-
 
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Exception\DiBindingNotFoundException;
@@ -72,5 +71,4 @@ abstract class AbstractContainer implements ContainerInterface
      * @return bool
      */
     abstract protected function hasInstance(string $identifier): bool;
-
 }

@@ -21,10 +21,9 @@
  * @since 2020-07-25
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di;
-
 
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
@@ -45,6 +44,7 @@ use function strpos;
  * @package coffeephp\di
  * @since 2020-07-25
  * @author Danny Damsky <dannydamsky99@gmail.com>
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 final class Container extends AbstractContainer
 {
@@ -74,11 +74,13 @@ final class Container extends AbstractContainer
     {
         if (isset($this->bindings[$identifier])) {
             $binding = $this->bindings[$identifier];
-            if (($instance = $binding->getInstance()) !== null) {
+            $instance = $binding->getInstance();
+            if ($instance !== null) {
                 return $instance;
             }
             $innerBinding = $this->getFirstBindingWithInstance($binding);
-            if (($instance = $innerBinding->getInstance()) === null) {
+            $instance = $innerBinding->getInstance();
+            if ($instance === null) {
                 $instance = $this->create($innerBinding->getImplementation(), $innerBinding->getExtraArguments());
             }
             $this->setInstanceToAllBindings($binding, $instance);
@@ -167,19 +169,19 @@ final class Container extends AbstractContainer
         } catch (DiException $e) {
             throw new DiException(
                 "{$e->getMessage()}; Implementation: $implementation",
-                $e->getCode(),
+                (int)$e->getCode(),
                 $e
             );
         } catch (ReflectionException $e) {
             throw new DiException(
                 "Reflection Error: {$e->getMessage()} ; Implementation: $implementation",
-                $e->getCode(),
+                (int)$e->getCode(),
                 $e
             );
         } catch (Throwable $e) {
             throw new DiException(
                 "Unknown Error: {$e->getMessage()} ; Implementation: $implementation",
-                $e->getCode(),
+                (int)$e->getCode(),
                 $e
             );
         }
@@ -190,6 +192,7 @@ final class Container extends AbstractContainer
      * @param array|null $extraArguments
      * @return object
      * @throws ReflectionException
+     * @psalm-suppress MixedAssignment
      */
     private function initialize(string $implementation, ?array $extraArguments): object
     {
@@ -208,16 +211,18 @@ final class Container extends AbstractContainer
      * @param string $implementation
      * @return ReflectionClass
      * @throws ReflectionException
+     * @phpstan-return ReflectionClass<object>
+     * @psalm-suppress ArgumentTypeCoercion
      */
     private function getReflectionClassFromImplementation(string $implementation): ReflectionClass
     {
+        /** @phpstan-ignore-next-line */
         $class = new ReflectionClass($implementation);
-        if (
-            $class->isAbstract() &&
-            !$class->isInstantiable() &&
-            ($class = $this->getReflectionClassFromAbstraction($class)) === null
-        ) {
-            throw new ReflectionException("Could not find implementation for abstraction: $implementation");
+        if ($class->isAbstract() && !$class->isInstantiable()) {
+            $class = $this->getReflectionClassFromAbstraction($class);
+            if ($class === null) {
+                throw new ReflectionException("Could not find implementation for abstraction: $implementation");
+            }
         }
         return $class;
     }
@@ -225,6 +230,8 @@ final class Container extends AbstractContainer
     /**
      * @param ReflectionClass $abstraction
      * @return ReflectionClass|null
+     * @phpstan-param ReflectionClass<object> $abstraction
+     * @phpstan-return ReflectionClass<object>|null
      */
     private function getReflectionClassFromAbstraction(ReflectionClass $abstraction): ?ReflectionClass
     {
@@ -260,11 +267,19 @@ final class Container extends AbstractContainer
         return $class;
     }
 
+    /**
+     * @psalm-suppress MixedMethodCall
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+     */
     private function requireAllComposerClasses(): void
     {
         try {
             foreach (get_declared_classes() as $className) {
                 if (strpos($className, 'ComposerAutoloaderInit') === 0) {
+                    /**
+                     * @var string $namespace
+                     * @var string $path
+                     */
                     foreach ($className::getLoader()->getClassMap() as $namespace => $path) {
                         class_exists($namespace, true);
                     }
@@ -281,6 +296,7 @@ final class Container extends AbstractContainer
      * @param array|null $extraArguments
      * @return mixed
      * @throws ReflectionException
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function initializeParameter(ReflectionParameter $parameter, ?array $extraArguments)
     {
@@ -290,6 +306,7 @@ final class Container extends AbstractContainer
         $parameterClass = $parameter->getClass();
 
         if ($extraArguments !== null && isset($extraArguments[$parameterName])) {
+            /** @var mixed|string $argument */
             $argument = $extraArguments[$parameterName];
             if (
                 $parameterClass !== null &&
@@ -305,7 +322,7 @@ final class Container extends AbstractContainer
             try {
                 return $this->getInstance($parameterClass->getName());
             } catch (DiException $e) {
-                $exceptionCode = $e->getCode();
+                $exceptionCode = (int)$e->getCode();
                 $previousException = $e;
             }
         }
@@ -314,7 +331,8 @@ final class Container extends AbstractContainer
             return $parameter->getDefaultValue();
         }
 
-        if (($type = $parameter->getType()) !== null && $type->allowsNull()) {
+        $type = $parameter->getType();
+        if ($type !== null && $type->allowsNull()) {
             return null;
         }
 
