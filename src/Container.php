@@ -44,6 +44,7 @@ use function strpos;
  * @package coffeephp\di
  * @since 2020-07-25
  * @author Danny Damsky <dannydamsky99@gmail.com>
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 final class Container extends AbstractContainer
 {
@@ -73,11 +74,13 @@ final class Container extends AbstractContainer
     {
         if (isset($this->bindings[$identifier])) {
             $binding = $this->bindings[$identifier];
-            if (($instance = $binding->getInstance()) !== null) {
+            $instance = $binding->getInstance();
+            if ($instance !== null) {
                 return $instance;
             }
             $innerBinding = $this->getFirstBindingWithInstance($binding);
-            if (($instance = $innerBinding->getInstance()) === null) {
+            $instance = $innerBinding->getInstance();
+            if ($instance === null) {
                 $instance = $this->create($innerBinding->getImplementation(), $innerBinding->getExtraArguments());
             }
             $this->setInstanceToAllBindings($binding, $instance);
@@ -266,6 +269,7 @@ final class Container extends AbstractContainer
 
     /**
      * @psalm-suppress MixedMethodCall
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)
      */
     private function requireAllComposerClasses(): void
     {
@@ -292,6 +296,7 @@ final class Container extends AbstractContainer
      * @param array|null $extraArguments
      * @return mixed
      * @throws ReflectionException
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function initializeParameter(ReflectionParameter $parameter, ?array $extraArguments)
     {
@@ -326,7 +331,8 @@ final class Container extends AbstractContainer
             return $parameter->getDefaultValue();
         }
 
-        if (($type = $parameter->getType()) !== null && $type->allowsNull()) {
+        $type = $parameter->getType();
+        if ($type !== null && $type->allowsNull()) {
             return null;
         }
 
