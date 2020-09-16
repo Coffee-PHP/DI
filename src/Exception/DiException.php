@@ -21,10 +21,9 @@
  * @since 2020-07-14
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di\Exception;
-
 
 use LogicException;
 use Psr\Container\ContainerExceptionInterface;

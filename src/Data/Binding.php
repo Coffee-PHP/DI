@@ -21,10 +21,9 @@
  * @since 2020-07-25
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di\Data;
-
 
 /**
  * Class Binding
