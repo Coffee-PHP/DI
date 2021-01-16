@@ -61,7 +61,7 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Create an instance of a class configured for the given identifier.
      *
-     * @param string $implementation
+     * @param class-string $implementation
      * @param array|null $extraArguments A map of constructor argument names as keys and argument values as values.
      * @return object
      * @throws DiBindingNotFoundException

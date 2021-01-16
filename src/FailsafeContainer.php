@@ -54,8 +54,9 @@ final class FailsafeContainer extends Container
 
 
     /**
-     * @param ReflectionClass $abstraction
-     * @return ReflectionClass|null
+     * @param ReflectionClass<object> $abstraction
+     * @return ReflectionClass<object>|null
+     * @psalm-suppress RedundantCast
      */
     private function getReflectionClassFromAbstraction(ReflectionClass $abstraction): ?ReflectionClass
     {
@@ -85,6 +86,9 @@ final class FailsafeContainer extends Container
         return $class;
     }
 
+    /**
+     * @psalm-suppress MixedMethodCall
+     */
     private function requireAllComposerClasses(): void
     {
         try {

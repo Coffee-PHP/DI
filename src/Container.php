@@ -56,12 +56,14 @@ class Container extends AbstractContainer
 
     /**
      * @inheritDoc
+     * @noinspection PhpRedundantVariableDocTypeInspection
      */
     final protected function getInstance(string $identifier): object
     {
         if (isset($this->bindings[$identifier])) {
             return $this->createClassFromBinding($this->bindings[$identifier]);
         }
+        /** @var class-string $identifier */
         $instance = $this->create($identifier);
         $this->bindings[$identifier] = new Binding($identifier, null, $instance);
         return $instance;
@@ -70,6 +72,7 @@ class Container extends AbstractContainer
     /**
      * @param Binding $binding
      * @return object
+     * @noinspection PhpRedundantVariableDocTypeInspection
      */
     private function createClassFromBinding(Binding $binding): object
     {
@@ -78,8 +81,12 @@ class Container extends AbstractContainer
             return $instance;
         }
         $innerBinding = $this->getFirstBindingWithInstance($binding);
-        $instance = $innerBinding->getInstance()
-            ?? $this->create($innerBinding->getImplementation(), $innerBinding->getExtraArguments());
+        $instance = $innerBinding->getInstance();
+        if ($instance === null) {
+            /** @var class-string $implementation */
+            $implementation = $innerBinding->getImplementation();
+            $instance = $this->create($implementation, $innerBinding->getExtraArguments());
+        }
         $this->setInstanceToAllBindings($binding, $instance);
         return $instance;
     }
@@ -181,7 +188,7 @@ class Container extends AbstractContainer
     }
 
     /**
-     * @param string $implementation
+     * @param class-string $implementation
      * @param array|null $extraArguments
      * @return object
      * @throws ReflectionException
@@ -193,6 +200,10 @@ class Container extends AbstractContainer
         $constructor = $class->getConstructor();
         if ($constructor !== null) {
             foreach ($constructor->getParameters() as $parameter) {
+                /**
+                 * This method is supposed to return mixed.
+                 * @psalm-suppress MixedAssignment
+                 */
                 $args[] = $this->initializeParameter($parameter, $extraArguments);
             }
         }
@@ -200,8 +211,8 @@ class Container extends AbstractContainer
     }
 
     /**
-     * @param string $implementation
-     * @return ReflectionClass
+     * @param class-string $implementation
+     * @return ReflectionClass<object>
      * @throws ReflectionException
      */
     private function getReflectionClassFromImplementation(string $implementation): ReflectionClass
@@ -216,8 +227,8 @@ class Container extends AbstractContainer
     /**
      * React on a non-instantiable class implementation.
      *
-     * @param ReflectionClass $class
-     * @return ReflectionClass
+     * @param ReflectionClass<object> $class
+     * @return ReflectionClass<object>
      * @throws ReflectionException
      */
     protected function onNonInstantiableImplementationFound(ReflectionClass $class): ReflectionClass
@@ -237,24 +248,20 @@ class Container extends AbstractContainer
         $exceptionCode = 0;
         $previousException = null;
         $parameterName = $parameter->getName();
-        $parameterClass = $parameter->getType();
+        $parameterType = $parameter->getType();
 
         if (isset($extraArguments[$parameterName])) {
             /** @var mixed|string $argument */
             $argument = $extraArguments[$parameterName];
-            if (
-                $parameterClass !== null &&
-                is_string($argument) &&
-                isset($this->bindings[$argument])
-            ) {
+            if ($parameterType !== null && is_string($argument) && isset($this->bindings[$argument])) {
                 return $this->getInstance($argument);
             }
             return $argument;
         }
 
-        if ($parameterClass !== null) {
+        if ($parameterType !== null) {
             try {
-                return $this->getInstance($parameterClass->getName());
+                return $this->getInstance((string)$parameterType);
             } catch (DiException $e) {
                 $exceptionCode = (int)$e->getCode();
                 $previousException = $e;
