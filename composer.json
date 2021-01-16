@@ -8,6 +8,9 @@
             "email": "dannydamsky99@gmail.com"
         }
     ],
+    "version": "1.1.0",
+    "readme": "README.md",
+    "time": "2021-01-16",
     "keywords": [
         "coffeephp",
         "coffee",
@@ -41,7 +44,11 @@
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true,
-        "apcu-autoloader": true
+        "apcu-autoloader": true,
+        "platform": {
+            "php": "8.0"
+        },
+        "platform-check": false
     },
     "scripts": {
         "coffeephp:exec:phpcbf": "coffeephp_exec_phpcbf",
