@@ -1,5 +1,7 @@
 # Coffee PHP - DI (Dependency Injection)
 
+![Build](https://github.com/Coffee-PHP/DI/workflows/Build/badge.svg)
+
 Provides a PSR-compliant container implementation for dependency injection.
 
 ```

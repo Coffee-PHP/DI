@@ -36,7 +36,6 @@ final class DependencyC implements DependencyCInterface
 {
     private string $a;
     private string $b;
-    private string $c;
 
     /**
      * DependencyC constructor.
@@ -47,11 +46,10 @@ final class DependencyC implements DependencyCInterface
     public function __construct(
         DependencyA $a,
         DependencyB $b,
-        string $c = 'C'
+        private string $c = 'C'
     ) {
         $this->a = $a->getA();
         $this->b = $b->getB();
-        $this->c = $c;
     }
 
     /**

@@ -8,6 +8,9 @@
             "email": "dannydamsky99@gmail.com"
         }
     ],
+    "version": "1.1.0",
+    "readme": "README.md",
+    "time": "2021-01-16",
     "keywords": [
         "coffeephp",
         "coffee",
@@ -19,7 +22,7 @@
         "di"
     ],
     "require": {
-        "php": ">=7.4",
+        "php": ">=8.0",
         "ext-apcu": "*",
         "psr/container": "*"
     },
@@ -41,23 +44,20 @@
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true,
-        "apcu-autoloader": true
+        "apcu-autoloader": true,
+        "platform": {
+            "php": "8.0"
+        },
+        "platform-check": false
     },
     "scripts": {
         "coffeephp:exec:phpcbf": "coffeephp_exec_phpcbf",
         "coffeephp:exec:phpcs": "coffeephp_exec_phpcs",
         "coffeephp:exec:phpmd": "coffeephp_exec_phpmd",
         "coffeephp:exec:phpstan-analyse": "coffeephp_exec_phpstan_analyse",
-        "coffeephp:exec:phpunit": "coffeephp_exec_phpunit --testsuite unit,integration",
+        "coffeephp:exec:phpunit": "coffeephp_exec_phpunit --testsuite unit",
         "coffeephp:exec:psalm": "coffeephp_exec_psalm",
         "coffeephp:exec:psalm-alter": "coffeephp_exec_psalm_alter",
-        "coffeephp:exec:publish": "coffeephp_exec_publish",
-        "coffeephp:exec:analyse": [
-            "@coffeephp:exec:phpunit",
-            "@coffeephp:exec:psalm",
-            "@coffeephp:exec:phpcs",
-            "@coffeephp:exec:phpstan-analyse",
-            "@coffeephp:exec:phpmd"
-        ]
+        "coffeephp:exec:publish": "coffeephp_exec_publish"
     }
 }

@@ -41,25 +41,27 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Retrieve the shared instance of a class configured for the given identifier.
      *
-     * @param string $identifier
+     * @param string $id
      * @return object
      * @throws DiBindingNotFoundException
      * @throws DiException
+     * @noinspection PhpMissingParamTypeInspection
      */
-    public function get($identifier): object;
+    public function get($id): object;
 
     /**
      * Get whether the current identifier is configured in the container.
      *
-     * @param string $identifier
+     * @param string $id
      * @return bool
+     * @noinspection PhpMissingParamTypeInspection
      */
-    public function has($identifier): bool;
+    public function has($id): bool;
 
     /**
      * Create an instance of a class configured for the given identifier.
      *
-     * @param string $implementation
+     * @param class-string $implementation
      * @param array|null $extraArguments A map of constructor argument names as keys and argument values as values.
      * @return object
      * @throws DiBindingNotFoundException
@@ -74,16 +76,12 @@ interface ContainerInterface extends PsrContainerInterface
      * @param string $implementation The implementation to bind to the identifier.
      * @param array|null $extraArguments A map of constructor argument names as keys and argument values as values.
      */
-    public function bind(
-        string $identifier,
-        string $implementation,
-        ?array $extraArguments = null
-    ): void;
+    public function bind(string $identifier, string $implementation, ?array $extraArguments = null): void;
 
     /**
      * Get the collection of currently configured bindings.
      *
-     * @return Binding[]
+     * @return array<string, Binding>
      */
     public function getBindings(): array;
 }

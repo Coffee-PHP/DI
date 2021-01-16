@@ -37,7 +37,6 @@ final class DependencyD implements DependencyDInterface
     private string $a;
     private string $b;
     private string $c;
-    private string $d;
 
     /**
      * DependencyD constructor.
@@ -50,12 +49,11 @@ final class DependencyD implements DependencyDInterface
         DependencyA $a,
         DependencyB $b,
         DependencyC $c,
-        string $d = 'D'
+        private string $d = 'D'
     ) {
         $this->a = $a->getA();
         $this->b = $b->getB();
         $this->c = $c->getC();
-        $this->d = $d;
     }
 
     /**

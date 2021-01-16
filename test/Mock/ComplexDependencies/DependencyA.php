@@ -34,15 +34,12 @@ namespace CoffeePhp\Di\Test\Mock\ComplexDependencies;
  */
 final class DependencyA implements DependencyAInterface
 {
-    private string $a;
-
     /**
      * DependencyA constructor.
      * @param string $a
      */
-    public function __construct(string $a = 'A')
+    public function __construct(private string $a = 'A')
     {
-        $this->a = $a;
     }
 
     /**

@@ -41,9 +41,9 @@ abstract class AbstractContainer implements ContainerInterface
     /**
      * @inheritDoc
      */
-    final public function get($identifier): object
+    final public function get($id): object
     {
-        return $this->getInstance($identifier);
+        return $this->getInstance($id);
     }
 
     /**
@@ -59,9 +59,9 @@ abstract class AbstractContainer implements ContainerInterface
     /**
      * @inheritDoc
      */
-    final public function has($identifier): bool
+    final public function has($id): bool
     {
-        return $this->hasInstance($identifier);
+        return $this->hasInstance($id);
     }
 
     /**

@@ -35,7 +35,6 @@ namespace CoffeePhp\Di\Test\Mock\ComplexDependencies;
 final class DependencyB implements DependencyBInterface
 {
     private string $a;
-    private string $b;
 
     /**
      * DependencyB constructor.
@@ -44,10 +43,9 @@ final class DependencyB implements DependencyBInterface
      */
     public function __construct(
         DependencyA $a,
-        string $b
+        private string $b
     ) {
         $this->a = $a->getA();
-        $this->b = $b;
     }
 
     /**

@@ -33,61 +33,61 @@ use ReflectionException;
 use ReflectionParameter;
 use Throwable;
 
-use function class_exists;
-use function get_declared_classes;
 use function is_string;
-use function similar_text;
-use function strpos;
 
 /**
  * Class Container
  * @package coffeephp\di
  * @since 2020-07-25
  * @author Danny Damsky <dannydamsky99@gmail.com>
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class Container extends AbstractContainer
+class Container extends AbstractContainer
 {
     /**
-     * @var Binding[]
-     */
-    private array $bindings;
-
-    private bool $composerClassesAutoloaded = false;
-
-    /**
      * Container constructor.
-     * @param Binding[] $bindings
+     * @param array<string, Binding> $bindings
      */
-    public function __construct(array $bindings = [])
+    final public function __construct(private array $bindings = [])
     {
-        $this->bindings = $bindings;
-        $binding = new Binding(self::class, null, $this);
-        $this->bindings[self::class] = $binding;
+        $binding = new Binding(static::class, null, $this);
+        $this->bindings[static::class] = $binding;
         $this->bindings[ContainerInterface::class] = $binding;
     }
 
     /**
      * @inheritDoc
+     * @noinspection PhpRedundantVariableDocTypeInspection
      */
-    protected function getInstance(string $identifier): object
+    final protected function getInstance(string $identifier): object
     {
         if (isset($this->bindings[$identifier])) {
-            $binding = $this->bindings[$identifier];
-            $instance = $binding->getInstance();
-            if ($instance !== null) {
-                return $instance;
-            }
-            $innerBinding = $this->getFirstBindingWithInstance($binding);
-            $instance = $innerBinding->getInstance();
-            if ($instance === null) {
-                $instance = $this->create($innerBinding->getImplementation(), $innerBinding->getExtraArguments());
-            }
-            $this->setInstanceToAllBindings($binding, $instance);
-            return $instance;
+            return $this->createClassFromBinding($this->bindings[$identifier]);
         }
+        /** @var class-string $identifier */
         $instance = $this->create($identifier);
         $this->bindings[$identifier] = new Binding($identifier, null, $instance);
+        return $instance;
+    }
+
+    /**
+     * @param Binding $binding
+     * @return object
+     * @noinspection PhpRedundantVariableDocTypeInspection
+     */
+    private function createClassFromBinding(Binding $binding): object
+    {
+        $instance = $binding->getInstance();
+        if ($instance !== null) {
+            return $instance;
+        }
+        $innerBinding = $this->getFirstBindingWithInstance($binding);
+        $instance = $innerBinding->getInstance();
+        if ($instance === null) {
+            /** @var class-string $implementation */
+            $implementation = $innerBinding->getImplementation();
+            $instance = $this->create($implementation, $innerBinding->getExtraArguments());
+        }
+        $this->setInstanceToAllBindings($binding, $instance);
         return $instance;
     }
 
@@ -146,7 +146,7 @@ final class Container extends AbstractContainer
     /**
      * @inheritDoc
      */
-    protected function hasInstance(string $identifier): bool
+    final protected function hasInstance(string $identifier): bool
     {
         return isset($this->bindings[$identifier]);
     }
@@ -154,7 +154,7 @@ final class Container extends AbstractContainer
     /**
      * @inheritDoc
      */
-    public function bind(string $identifier, string $implementation, ?array $extraArguments = null): void
+    final public function bind(string $identifier, string $implementation, ?array $extraArguments = null): void
     {
         $this->bindings[$identifier] = new Binding($implementation, $extraArguments);
     }
@@ -162,7 +162,7 @@ final class Container extends AbstractContainer
     /**
      * @inheritDoc
      */
-    public function create(string $implementation, ?array $extraArguments = null): object
+    final public function create(string $implementation, ?array $extraArguments = null): object
     {
         try {
             return $this->initialize($implementation, $extraArguments);
@@ -188,11 +188,10 @@ final class Container extends AbstractContainer
     }
 
     /**
-     * @param string $implementation
+     * @param class-string $implementation
      * @param array|null $extraArguments
      * @return object
      * @throws ReflectionException
-     * @psalm-suppress MixedAssignment
      */
     private function initialize(string $implementation, ?array $extraArguments): object
     {
@@ -201,6 +200,10 @@ final class Container extends AbstractContainer
         $constructor = $class->getConstructor();
         if ($constructor !== null) {
             foreach ($constructor->getParameters() as $parameter) {
+                /**
+                 * This method is supposed to return mixed.
+                 * @psalm-suppress MixedAssignment
+                 */
                 $args[] = $this->initializeParameter($parameter, $extraArguments);
             }
         }
@@ -208,87 +211,30 @@ final class Container extends AbstractContainer
     }
 
     /**
-     * @param string $implementation
-     * @return ReflectionClass
+     * @param class-string $implementation
+     * @return ReflectionClass<object>
      * @throws ReflectionException
-     * @phpstan-return ReflectionClass<object>
-     * @psalm-suppress ArgumentTypeCoercion
      */
     private function getReflectionClassFromImplementation(string $implementation): ReflectionClass
     {
-        /** @phpstan-ignore-next-line */
         $class = new ReflectionClass($implementation);
         if ($class->isAbstract() && !$class->isInstantiable()) {
-            $class = $this->getReflectionClassFromAbstraction($class);
-            if ($class === null) {
-                throw new ReflectionException("Could not find implementation for abstraction: $implementation");
-            }
+            $class = $this->onNonInstantiableImplementationFound($class);
         }
         return $class;
     }
 
     /**
-     * @param ReflectionClass $abstraction
-     * @return ReflectionClass|null
-     * @phpstan-param ReflectionClass<object> $abstraction
-     * @phpstan-return ReflectionClass<object>|null
+     * React on a non-instantiable class implementation.
+     *
+     * @param ReflectionClass<object> $class
+     * @return ReflectionClass<object>
+     * @throws ReflectionException
      */
-    private function getReflectionClassFromAbstraction(ReflectionClass $abstraction): ?ReflectionClass
+    protected function onNonInstantiableImplementationFound(ReflectionClass $class): ReflectionClass
     {
-        $implementation = $abstraction->getName();
-        $interfaceName = $abstraction->getShortName();
-        $currentSimilarity = -1;
-        $class = null;
-        foreach (get_declared_classes() as $className) {
-            try {
-                $classCandidate = new ReflectionClass($className);
-                if (
-                    $classCandidate->isSubclassOf($implementation) &&
-                    $classCandidate->isInstantiable()
-                ) {
-                    $newSimilarity = (int)similar_text($interfaceName, $classCandidate->getShortName());
-                    if (
-                        $class === null ||
-                        $newSimilarity > $currentSimilarity
-                    ) {
-                        $currentSimilarity = $newSimilarity;
-                        $class = $classCandidate;
-                    }
-                }
-            } catch (ReflectionException $e) {
-                // Do nothing.
-            }
-        }
-        if (!$this->composerClassesAutoloaded && $class === null) {
-            $this->requireAllComposerClasses();
-            $this->composerClassesAutoloaded = true;
-            return $this->getReflectionClassFromAbstraction($abstraction);
-        }
-        return $class;
-    }
-
-    /**
-     * @psalm-suppress MixedMethodCall
-     * @SuppressWarnings(PHPMD.UnusedLocalVariable)
-     */
-    private function requireAllComposerClasses(): void
-    {
-        try {
-            foreach (get_declared_classes() as $className) {
-                if (strpos($className, 'ComposerAutoloaderInit') === 0) {
-                    /**
-                     * @var string $namespace
-                     * @var string $path
-                     */
-                    foreach ($className::getLoader()->getClassMap() as $namespace => $path) {
-                        class_exists($namespace, true);
-                    }
-                    break;
-                }
-            }
-        } catch (Throwable $e) {
-            // Do nothing.
-        }
+        // By default a non-instantiable class will cause an exception to be thrown.
+        throw new ReflectionException("Could not find implementation for abstraction: {$class->getName()}");
     }
 
     /**
@@ -296,31 +242,26 @@ final class Container extends AbstractContainer
      * @param array|null $extraArguments
      * @return mixed
      * @throws ReflectionException
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    private function initializeParameter(ReflectionParameter $parameter, ?array $extraArguments)
+    private function initializeParameter(ReflectionParameter $parameter, ?array $extraArguments): mixed
     {
         $exceptionCode = 0;
         $previousException = null;
         $parameterName = $parameter->getName();
-        $parameterClass = $parameter->getClass();
+        $parameterType = $parameter->getType();
 
-        if ($extraArguments !== null && isset($extraArguments[$parameterName])) {
+        if (isset($extraArguments[$parameterName])) {
             /** @var mixed|string $argument */
             $argument = $extraArguments[$parameterName];
-            if (
-                $parameterClass !== null &&
-                is_string($argument) &&
-                isset($this->bindings[$argument])
-            ) {
+            if ($parameterType !== null && is_string($argument) && isset($this->bindings[$argument])) {
                 return $this->getInstance($argument);
             }
             return $argument;
         }
 
-        if ($parameterClass !== null) {
+        if ($parameterType !== null) {
             try {
-                return $this->getInstance($parameterClass->getName());
+                return $this->getInstance((string)$parameterType);
             } catch (DiException $e) {
                 $exceptionCode = (int)$e->getCode();
                 $previousException = $e;
@@ -331,8 +272,7 @@ final class Container extends AbstractContainer
             return $parameter->getDefaultValue();
         }
 
-        $type = $parameter->getType();
-        if ($type !== null && $type->allowsNull()) {
+        if ($parameter->getType()?->allowsNull()) {
             return null;
         }
 
@@ -346,7 +286,7 @@ final class Container extends AbstractContainer
     /**
      * @inheritDoc
      */
-    public function getBindings(): array
+    final public function getBindings(): array
     {
         return $this->bindings;
     }
