@@ -33,10 +33,6 @@ namespace CoffeePhp\Di\Data;
  */
 final class Binding
 {
-    private string $implementation;
-    private ?array $extraArguments;
-    private ?object $instance;
-
     /**
      * Binding constructor.
      * @param string $implementation
@@ -44,13 +40,10 @@ final class Binding
      * @param object|null $instance
      */
     public function __construct(
-        string $implementation,
-        ?array $extraArguments = null,
-        ?object $instance = null
+        private string $implementation,
+        private ?array $extraArguments = null,
+        private ?object $instance = null
     ) {
-        $this->implementation = $implementation;
-        $this->extraArguments = $extraArguments;
-        $this->instance = $instance;
     }
 
     /**

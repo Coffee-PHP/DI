@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ContainerTest.php
+ * FailsafeContainerTest.php
  *
  * Copyright 2020 Danny Damsky
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,10 +26,9 @@ declare (strict_types=1);
 namespace CoffeePhp\Di\Test\Unit;
 
 
-use CoffeePhp\Di\Container;
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
-use CoffeePhp\Di\Exception\DiException;
+use CoffeePhp\Di\FailsafeContainer;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyA;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyAInterface;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyB;
@@ -46,20 +45,20 @@ use function PHPUnit\Framework\assertSame;
 use function PHPUnit\Framework\assertTrue;
 
 /**
- * Class ContainerTest
+ * Class FailsafeContainerTest
  * @package coffeephp\di
  * @since 2020-07-16
  * @author Danny Damsky <dannydamsky99@gmail.com>
- * @see Container
+ * @see FailsafeContainer
  */
-final class ContainerTest extends TestCase
+final class FailsafeContainerTest extends TestCase
 {
     /**
-     * @see Container::create()
+     * @see FailsafeContainer::create()
      */
     public function testCreate(): void
     {
-        $container = new Container();
+        $container = new FailsafeContainer();
 
         /** @var DependencyA $dependencyA */
         $dependencyA = $container->create(DependencyA::class);
@@ -97,23 +96,15 @@ final class ContainerTest extends TestCase
         assertSame('C', $dependencyD->getC());
         assertSame('D', $dependencyD->getD());
 
-        self::assertException(
-            fn() => $container->create(DependencyAInterface::class),
-            DiException::class,
-            sprintf(
-                "Reflection Error: Could not find implementation for abstraction: %s ; Implementation: %s",
-                DependencyAInterface::class,
-                DependencyAInterface::class
-            )
-        );
+        assertInstanceOf(DependencyA::class, $container->create(DependencyAInterface::class));
     }
 
     /**
-     * @see Container::get()
+     * @see FailsafeContainer::get()
      */
     public function testGet(): void
     {
-        $container = new Container();
+        $container = new FailsafeContainer();
         $container->bind(DependencyAInterface::class, DependencyA::class);
         $container->bind(DependencyBInterface::class, DependencyB::class, ['b' => 'B']);
         $container->bind(DependencyCInterface::class, DependencyC::class);
@@ -135,11 +126,11 @@ final class ContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
         assertSame($container, $container->get(ContainerInterface::class));
-        assertSame($container, $container->get(Container::class));
+        assertSame($container, $container->get(FailsafeContainer::class));
     }
 
     /**
-     * @see Container::get()
+     * @see FailsafeContainer::get()
      */
     public function testGetWithCustomConstructor(): void
     {
@@ -147,7 +138,7 @@ final class ContainerTest extends TestCase
         $depB = new Binding(DependencyB::class, ['b' => 'B']);
         $depC = new Binding(DependencyC::class);
         $depD = new Binding(DependencyD::class);
-        $container = new Container(
+        $container = new FailsafeContainer(
             [
                 DependencyA::class => $depA,
                 DependencyAInterface::class => $depA,
@@ -175,17 +166,17 @@ final class ContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
         assertSame($container, $container->get(ContainerInterface::class));
-        assertSame($container, $container->get(Container::class));
+        assertSame($container, $container->get(FailsafeContainer::class));
     }
 
     /**
-     * @see Container::has()
+     * @see FailsafeContainer::has()
      */
     public function testHas(): void
     {
-        $container = new Container();
+        $container = new FailsafeContainer();
 
-        assertTrue($container->has(Container::class));
+        assertTrue($container->has(FailsafeContainer::class));
         assertTrue($container->has(ContainerInterface::class));
 
         $container->bind(DependencyAInterface::class, DependencyA::class);
@@ -205,7 +196,7 @@ final class ContainerTest extends TestCase
      */
     public function testUniqueFunctionality(): void
     {
-        $container = new Container();
+        $container = new FailsafeContainer();
 
         $container->bind(DependencyAInterface::class, DependencyBInterface::class);
         $container->bind(DependencyBInterface::class, DependencyCInterface::class);
