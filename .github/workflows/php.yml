@@ -38,6 +38,3 @@ jobs:
 
       - name: Run PHPStan
         run: composer run-script coffeephp:exec:phpstan-analyse
-
-      - name: Run PHPCS
-        run: composer run-script coffeephp:exec:phpcs
