@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace CoffeePhp\Di;
 
 use CoffeePhp\Di\Composition\ContainerBindingsInstanceMutationTrait;
+use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
+use CoffeePhp\Di\Exception\DiBindingNotFoundException;
 use CoffeePhp\Di\Exception\DiException;
 use ReflectionClass;
 use ReflectionException;
@@ -41,83 +43,97 @@ use function is_string;
  * @since 2020-07-25
  * @author Danny Damsky <dannydamsky99@gmail.com>
  */
-class Container extends AbstractContainer
+final class Container implements ContainerInterface
 {
     use ContainerBindingsInstanceMutationTrait;
 
     /**
      * @inheritDoc
-     * @noinspection PhpRedundantVariableDocTypeInspection
+     * @psalm-suppress NullableReturnStatement, InvalidNullableReturnType
      */
-    final protected function getInstance(string $identifier): object
+    public function get($id): object
     {
-        if (isset($this->bindings[$identifier])) {
-            return $this->createClassFromBinding($this->bindings[$identifier]);
+        if (isset($this->bindings[$id])) {
+            return $this->resolveInstanceFromBinding($this->bindings[$id]);
         }
-        /** @var class-string $identifier */
-        $instance = $this->create($identifier);
-        $this->bindings[$identifier] = new Binding($identifier, null, $instance);
-        return $instance;
+        $binding = new Binding($id);
+        $this->processBinding($binding);
+        $this->bindings[$id] = $binding;
+        return $binding->getInstance(); // @phpstan-ignore-line
     }
 
     /**
      * @param Binding $binding
      * @return object
-     * @noinspection PhpRedundantVariableDocTypeInspection
      */
-    private function createClassFromBinding(Binding $binding): object
+    private function resolveInstanceFromBinding(Binding $binding): object
     {
         $instance = $binding->getInstance();
         if ($instance !== null) {
             return $instance;
         }
         $innerBinding = $this->getFirstBindingWithInstance($binding);
-        $instance = $innerBinding->getInstance();
-        if ($instance === null) {
-            /** @var class-string $implementation */
-            $implementation = $innerBinding->getImplementation();
-            $instance = $this->create($implementation, $innerBinding->getExtraArguments());
+        if ($innerBinding->getInstance() === null) {
+            $this->processBinding($innerBinding);
         }
+        /** @var object $instance */
+        $instance = $innerBinding->getInstance();
         $this->setInstanceToAllBindings($binding, $instance);
         return $instance;
     }
 
     /**
-     * @inheritDoc
+     * Create an instance of a class configured for the given identifier
+     * and set it to the provided binding.
+     *
+     * @param Binding $binding
+     * @throws DiBindingNotFoundException
+     * @throws DiException
      */
-    final public function create(string $implementation, ?array $extraArguments = null): object
+    private function processBinding(Binding $binding): void
     {
         try {
-            return $this->initialize($implementation, $extraArguments);
+            $this->initializeBinding($binding);
+        } catch (DiBindingNotFoundException $e) {
+            throw new DiBindingNotFoundException(
+                "Internal Error: {$e->getMessage()} ; Implementation: {$binding->getImplementation()}",
+                (int)$e->getCode(),
+                $e
+            );
         } catch (DiException $e) {
-            $error = $e;
-            $errorType = 'Internal';
+            throw new DiException(
+                "Internal Error: {$e->getMessage()} ; Implementation: {$binding->getImplementation()}",
+                (int)$e->getCode(),
+                $e
+            );
         } catch (ReflectionException $e) {
-            $error = $e;
-            $errorType = 'Reflection';
+            throw new DiException(
+                "Reflection Error: {$e->getMessage()} ; Implementation: {$binding->getImplementation()}",
+                (int)$e->getCode(),
+                $e
+            );
         } catch (Throwable $e) {
-            $error = $e;
-            $errorType = 'Unknown';
+            throw new DiException(
+                "Unknown Error: {$e->getMessage()} ; Implementation: {$binding->getImplementation()}",
+                (int)$e->getCode(),
+                $e
+            );
         }
-        throw new DiException(
-            "{$errorType} Error: {$error->getMessage()} ; Implementation: $implementation",
-            (int)$error->getCode(),
-            $error
-        );
     }
 
     /**
-     * @param class-string $implementation
-     * @param array|null $extraArguments
-     * @return object
+     * @param Binding $binding
+     * @return void
      * @throws ReflectionException
+     * @psalm-suppress ArgumentTypeCoercion
      */
-    private function initialize(string $implementation, ?array $extraArguments): object
+    private function initializeBinding(Binding $binding): void
     {
-        $class = $this->getReflectionClassFromImplementation($implementation);
+        $class = $this->getReflectionClassFromImplementation($binding->getImplementation()); // @phpstan-ignore-line
         $args = [];
         $constructor = $class->getConstructor();
         if ($constructor !== null) {
+            $extraArguments = $binding->getExtraArguments();
             foreach ($constructor->getParameters() as $parameter) {
                 /**
                  * This method is supposed to return mixed.
@@ -126,7 +142,7 @@ class Container extends AbstractContainer
                 $args[] = $this->initializeParameter($parameter, $extraArguments);
             }
         }
-        return $class->newInstance(...$args);
+        $binding->setInstance($class->newInstance(...$args));
     }
 
     /**
@@ -138,22 +154,9 @@ class Container extends AbstractContainer
     {
         $class = new ReflectionClass($implementation);
         if ($class->isAbstract() && !$class->isInstantiable()) {
-            $class = $this->onNonInstantiableImplementationFound($class);
+            throw new DiBindingNotFoundException("Could not find implementation for abstraction: {$class->getName()}");
         }
         return $class;
-    }
-
-    /**
-     * React on a non-instantiable class implementation.
-     *
-     * @param ReflectionClass<object> $class
-     * @return ReflectionClass<object>
-     * @throws ReflectionException
-     */
-    protected function onNonInstantiableImplementationFound(ReflectionClass $class): ReflectionClass
-    {
-        // By default a non-instantiable class will cause an exception to be thrown.
-        throw new ReflectionException("Could not find implementation for abstraction: {$class->getName()}");
     }
 
     /**
@@ -171,18 +174,20 @@ class Container extends AbstractContainer
             /** @var mixed|string $argument */
             $argument = $extraArguments[$parameterName];
             if ($parameterType !== null && is_string($argument) && isset($this->bindings[$argument])) {
-                return $this->getInstance($argument);
+                return $this->get($argument);
             }
             return $argument;
         }
 
-        $exceptionCode = 0;
+        $previousMessage = '';
+        $previousExceptionCode = 0;
         $previousException = null;
         if ($parameterType !== null) {
             try {
-                return $this->getInstance((string)$parameterType);
+                return $this->get((string)$parameterType);
             } catch (DiException $e) {
-                $exceptionCode = (int)$e->getCode();
+                $previousMessage = $e->getMessage();
+                $previousExceptionCode = (int)$e->getCode();
                 $previousException = $e;
             }
         }
@@ -195,9 +200,9 @@ class Container extends AbstractContainer
             return null;
         }
 
-        throw new ReflectionException(
-            "Could not parse parameter: {$parameter->getName()}",
-            $exceptionCode,
+        throw new DiException(
+            "Could not parse parameter: {$parameter->getName()} ; {$previousMessage}",
+            $previousExceptionCode,
             $previousException
         );
     }

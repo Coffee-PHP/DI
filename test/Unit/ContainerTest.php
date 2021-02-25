@@ -28,7 +28,6 @@ namespace CoffeePhp\Di\Test\Unit;
 use CoffeePhp\Di\Container;
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
-use CoffeePhp\Di\Exception\DiException;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyA;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyAInterface;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyB;
@@ -54,60 +53,6 @@ use function PHPUnit\Framework\assertTrue;
  */
 final class ContainerTest extends TestCase
 {
-    /**
-     * @see Container::create()
-     */
-    public function testCreate(): void
-    {
-        $container = new Container();
-
-        /** @var DependencyA $dependencyA */
-        $dependencyA = $container->create(DependencyA::class);
-
-        assertInstanceOf(DependencyA::class, $dependencyA);
-        assertSame('A', $dependencyA->getA());
-
-        $mixedHashMap = ['b' => 'B'];
-
-        /** @var DependencyB $dependencyB */
-        $dependencyB = $container->create(DependencyB::class, $mixedHashMap);
-
-        assertInstanceOf(DependencyB::class, $dependencyB);
-        assertSame('A', $dependencyB->getA());
-        assertSame('B', $dependencyB->getB());
-
-        $mixedHashMap['b'] = $dependencyB;
-
-        /** @var DependencyC $dependencyC */
-        $dependencyC = $container->create(DependencyC::class, $mixedHashMap);
-
-        assertInstanceOf(DependencyC::class, $dependencyC);
-        assertSame('A', $dependencyC->getA());
-        assertSame('B', $dependencyC->getB());
-        assertSame('C', $dependencyC->getC());
-
-        $mixedHashMap['c'] = $dependencyC;
-
-        /** @var DependencyD $dependencyD */
-        $dependencyD = $container->create(DependencyD::class, $mixedHashMap);
-
-        assertInstanceOf(DependencyD::class, $dependencyD);
-        assertSame('A', $dependencyD->getA());
-        assertSame('B', $dependencyD->getB());
-        assertSame('C', $dependencyD->getC());
-        assertSame('D', $dependencyD->getD());
-
-        self::assertException(
-            fn() => $container->create(DependencyAInterface::class),
-            DiException::class,
-            sprintf(
-                "Reflection Error: Could not find implementation for abstraction: %s ; Implementation: %s",
-                DependencyAInterface::class,
-                DependencyAInterface::class
-            )
-        );
-    }
-
     /**
      * @see Container::get()
      */
