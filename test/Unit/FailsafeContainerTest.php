@@ -21,10 +21,9 @@
  * @since 2020-07-16
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di\Test\Unit;
-
 
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
