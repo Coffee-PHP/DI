@@ -21,10 +21,9 @@
  * @since 2020-07-16
  */
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace CoffeePhp\Di\Test\Unit;
-
 
 use CoffeePhp\Di\Container;
 use CoffeePhp\Di\Contract\ContainerInterface;
@@ -39,6 +38,7 @@ use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyCInterface;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyD;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyDInterface;
 use CoffeePhp\QualityTools\TestCase;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 use function PHPUnit\Framework\assertFalse;
 use function PHPUnit\Framework\assertInstanceOf;
@@ -134,6 +134,7 @@ final class ContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get('a'));
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
+        assertSame($container, $container->get(PsrContainerInterface::class));
         assertSame($container, $container->get(ContainerInterface::class));
         assertSame($container, $container->get(Container::class));
     }
@@ -174,6 +175,7 @@ final class ContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get('a'));
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
+        assertSame($container, $container->get(PsrContainerInterface::class));
         assertSame($container, $container->get(ContainerInterface::class));
         assertSame($container, $container->get(Container::class));
     }

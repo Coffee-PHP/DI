@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace CoffeePhp\Di;
 
-use CoffeePhp\Di\Contract\ContainerInterface;
+use CoffeePhp\Di\Composition\ContainerBindingsInstanceMutationTrait;
 use CoffeePhp\Di\Data\Binding;
 use CoffeePhp\Di\Exception\DiException;
 use ReflectionClass;
@@ -43,16 +43,7 @@ use function is_string;
  */
 class Container extends AbstractContainer
 {
-    /**
-     * Container constructor.
-     * @param array<string, Binding> $bindings
-     */
-    final public function __construct(private array $bindings = [])
-    {
-        $binding = new Binding(static::class, null, $this);
-        $this->bindings[static::class] = $binding;
-        $this->bindings[ContainerInterface::class] = $binding;
-    }
+    use ContainerBindingsInstanceMutationTrait;
 
     /**
      * @inheritDoc
@@ -92,74 +83,6 @@ class Container extends AbstractContainer
     }
 
     /**
-     * @param Binding $binding
-     * @param object $instance
-     */
-    private function setInstanceToAllBindings(Binding $binding, object $instance): void
-    {
-        $binding->setInstance($instance);
-        $implementation = $binding->getImplementation();
-        while (isset($this->bindings[$implementation])) {
-            $nextBinding = $this->bindings[$implementation];
-            if ($nextBinding->getExtraArguments() !== $binding->getExtraArguments()) {
-                break;
-            }
-            $binding = $nextBinding;
-            $binding->setInstance($instance);
-            $implementation = $binding->getImplementation();
-            if ($binding === ($this->bindings[$implementation] ?? $binding)) {
-                break;
-            }
-        }
-    }
-
-    /**
-     * Get the first binding that has an instantiated
-     * object inside it.
-     *
-     * If no instances found, the last binding found will
-     * be returned.
-     *
-     * @param Binding $binding
-     * @return Binding
-     */
-    private function getFirstBindingWithInstance(Binding $binding): Binding
-    {
-        $implementation = $binding->getImplementation();
-        while (isset($this->bindings[$implementation])) {
-            $nextBinding = $this->bindings[$implementation];
-            if ($nextBinding->getExtraArguments() !== $binding->getExtraArguments()) {
-                break;
-            }
-            $binding = $nextBinding;
-            if ($binding->hasInstance()) {
-                return $binding;
-            }
-            $implementation = $binding->getImplementation();
-            if ($binding === ($this->bindings[$implementation] ?? $binding)) {
-                break;
-            }
-        }
-        return $binding;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    final protected function hasInstance(string $identifier): bool
-    {
-        return isset($this->bindings[$identifier]);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    final public function bind(string $identifier, string $implementation, ?array $extraArguments = null): void
-    {
-        $this->bindings[$identifier] = new Binding($implementation, $extraArguments);
-    }
-
-    /**
      * @inheritDoc
      */
     final public function create(string $implementation, ?array $extraArguments = null): object
@@ -167,24 +90,20 @@ class Container extends AbstractContainer
         try {
             return $this->initialize($implementation, $extraArguments);
         } catch (DiException $e) {
-            throw new DiException(
-                "{$e->getMessage()}; Implementation: $implementation",
-                (int)$e->getCode(),
-                $e
-            );
+            $error = $e;
+            $errorType = 'Internal';
         } catch (ReflectionException $e) {
-            throw new DiException(
-                "Reflection Error: {$e->getMessage()} ; Implementation: $implementation",
-                (int)$e->getCode(),
-                $e
-            );
+            $error = $e;
+            $errorType = 'Reflection';
         } catch (Throwable $e) {
-            throw new DiException(
-                "Unknown Error: {$e->getMessage()} ; Implementation: $implementation",
-                (int)$e->getCode(),
-                $e
-            );
+            $error = $e;
+            $errorType = 'Unknown';
         }
+        throw new DiException(
+            "{$errorType} Error: {$error->getMessage()} ; Implementation: $implementation",
+            (int)$error->getCode(),
+            $error
+        );
     }
 
     /**
@@ -245,8 +164,6 @@ class Container extends AbstractContainer
      */
     private function initializeParameter(ReflectionParameter $parameter, ?array $extraArguments): mixed
     {
-        $exceptionCode = 0;
-        $previousException = null;
         $parameterName = $parameter->getName();
         $parameterType = $parameter->getType();
 
@@ -259,6 +176,8 @@ class Container extends AbstractContainer
             return $argument;
         }
 
+        $exceptionCode = 0;
+        $previousException = null;
         if ($parameterType !== null) {
             try {
                 return $this->getInstance((string)$parameterType);
@@ -281,13 +200,5 @@ class Container extends AbstractContainer
             $exceptionCode,
             $previousException
         );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    final public function getBindings(): array
-    {
-        return $this->bindings;
     }
 }
