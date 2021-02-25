@@ -41,7 +41,7 @@ trait ContainerBindingsTrait
      * Constructor for the bindings aware container implementation.
      * @param array<string, Binding> $bindings
      */
-    final public function __construct(private array $bindings = [])
+    public function __construct(private array $bindings = [])
     {
         $binding = new Binding(static::class, null, $this);
         $this->bindings[static::class] = $binding;
@@ -54,7 +54,7 @@ trait ContainerBindingsTrait
      *
      * @return array<string, Binding>
      */
-    final public function getBindings(): array
+    public function getBindings(): array
     {
         return $this->bindings;
     }
@@ -62,23 +62,24 @@ trait ContainerBindingsTrait
     /**
      * Get whether the current identifier is configured in the container.
      *
-     * @param string $identifier
+     * @param string $id
      * @return bool
+     * @noinspection PhpMissingParamTypeInspection
      */
-    final protected function hasInstance(string $identifier): bool
+    public function has($id): bool
     {
-        return isset($this->bindings[$identifier]);
+        return isset($this->bindings[$id]);
     }
 
     /**
      * Bind the given implementation to the identifier.
      *
-     * @param string $identifier The identifier to use for the binding.
+     * @param string $id The identifier to use for the binding.
      * @param string $implementation The implementation to bind to the identifier.
      * @param array|null $extraArguments A map of constructor argument names as keys and argument values as values.
      */
-    final public function bind(string $identifier, string $implementation, ?array $extraArguments = null): void
+    public function bind(string $id, string $implementation, ?array $extraArguments = null): void
     {
-        $this->bindings[$identifier] = new Binding($implementation, $extraArguments);
+        $this->bindings[$id] = new Binding($implementation, $extraArguments);
     }
 }
