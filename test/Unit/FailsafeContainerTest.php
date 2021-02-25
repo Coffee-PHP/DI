@@ -38,6 +38,7 @@ use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyCInterface;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyD;
 use CoffeePhp\Di\Test\Mock\ComplexDependencies\DependencyDInterface;
 use CoffeePhp\QualityTools\TestCase;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 use function PHPUnit\Framework\assertFalse;
 use function PHPUnit\Framework\assertInstanceOf;
@@ -125,6 +126,7 @@ final class FailsafeContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get('a'));
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
+        assertSame($container, $container->get(PsrContainerInterface::class));
         assertSame($container, $container->get(ContainerInterface::class));
         assertSame($container, $container->get(FailsafeContainer::class));
     }
@@ -165,6 +167,7 @@ final class FailsafeContainerTest extends TestCase
         assertSame($container->get(DependencyD::class), $container->get('a'));
         assertSame($container->get(DependencyD::class), $container->get(DependencyD::class));
 
+        assertSame($container, $container->get(PsrContainerInterface::class));
         assertSame($container, $container->get(ContainerInterface::class));
         assertSame($container, $container->get(FailsafeContainer::class));
     }

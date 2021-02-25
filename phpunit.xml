@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd vendor/phpunit/phpunit/phpunit.xml"
          bootstrap="vendor/autoload.php"
          colors="true"
          verbose="true"
@@ -14,11 +14,11 @@
       <directory phpVersion="8.0">test/Integration/</directory>
     </testsuite>
   </testsuites>
-  <filter>
-    <whitelist>
+  <coverage>
+    <include>
       <directory>src</directory>
-    </whitelist>
-  </filter>
+    </include>
+  </coverage>
   <php>
     <ini name="error_reporting" value="E_ALL" force="true"/>
     <ini name="display_errors" value="On" force="true"/>
