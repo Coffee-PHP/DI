@@ -24,11 +24,14 @@
     "require": {
         "php": ">=8.0",
         "ext-apcu": "*",
-        "psr/container": "*"
+        "psr/container": "^1.0"
     },
     "require-dev": {
         "coffeephp/quality-tools": "1.*",
         "roave/security-advisories": "dev-master"
+    },
+    "provide": {
+        "psr/container-implementation": "1.0"
     },
     "autoload": {
         "psr-4": {
