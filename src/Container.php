@@ -25,11 +25,11 @@ declare(strict_types=1);
 
 namespace CoffeePhp\Di;
 
-use CoffeePhp\Di\Composition\ContainerBindingsInstanceMutationTrait;
 use CoffeePhp\Di\Contract\ContainerInterface;
 use CoffeePhp\Di\Data\Binding;
 use CoffeePhp\Di\Exception\DiBindingNotFoundException;
 use CoffeePhp\Di\Exception\DiException;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionParameter;
@@ -45,13 +45,21 @@ use function is_string;
  */
 final class Container implements ContainerInterface
 {
-    use ContainerBindingsInstanceMutationTrait;
+    /**
+     * @inheritDoc
+     */
+    public function __construct(private array $bindings = [])
+    {
+        $binding = new Binding(self::class, null, $this);
+        $this->bindings[self::class] = $binding;
+        $this->bindings[ContainerInterface::class] = $binding;
+        $this->bindings[PsrContainerInterface::class] = $binding;
+    }
 
     /**
      * @inheritDoc
-     * @psalm-suppress NullableReturnStatement, InvalidNullableReturnType
      */
-    public function get($id): object
+    public function get(string $id): object
     {
         if (isset($this->bindings[$id])) {
             return $this->resolveInstanceFromBinding($this->bindings[$id]);
@@ -59,7 +67,7 @@ final class Container implements ContainerInterface
         $binding = new Binding($id);
         $this->processBinding($binding);
         $this->bindings[$id] = $binding;
-        return $binding->getInstance(); // @phpstan-ignore-line
+        return $binding->getInstance();
     }
 
     /**
@@ -76,10 +84,66 @@ final class Container implements ContainerInterface
         if ($innerBinding->getInstance() === null) {
             $this->processBinding($innerBinding);
         }
-        /** @var object $instance */
         $instance = $innerBinding->getInstance();
         $this->setInstanceToAllBindings($binding, $instance);
         return $instance;
+    }
+
+    /**
+     * @param Binding $binding
+     * @param object $instance
+     * @noinspection SuspiciousLoopInspection
+     */
+    private function setInstanceToAllBindings(Binding $binding, object $instance): void
+    {
+        $binding->setInstance($instance);
+        foreach ($this->getBindingInstancesIterator($binding) as $binding) {
+            $binding->setInstance($instance);
+        }
+    }
+
+    /**
+     * Get the first binding that has an instantiated
+     * object inside it.
+     *
+     * If no instances found, the last binding found will
+     * be returned.
+     *
+     * @param Binding $binding
+     * @return Binding
+     * @noinspection SuspiciousLoopInspection
+     */
+    private function getFirstBindingWithInstance(Binding $binding): Binding
+    {
+        foreach ($this->getBindingInstancesIterator($binding) as $binding) {
+            if ($binding->hasInstance()) {
+                break;
+            }
+        }
+        return $binding;
+    }
+
+    /**
+     * Get an iterator of binding instances for the given binding.
+     *
+     * @param Binding $binding
+     * @return iterable<int, Binding>
+     */
+    private function getBindingInstancesIterator(Binding $binding): iterable
+    {
+        $implementation = $binding->getImplementation();
+        while (isset($this->bindings[$implementation])) {
+            $nextBinding = $this->bindings[$implementation];
+            if ($nextBinding->getExtraArguments() !== $binding->getExtraArguments()) {
+                break;
+            }
+            $binding = $nextBinding;
+            yield $binding;
+            $implementation = $binding->getImplementation();
+            if ($binding === ($this->bindings[$implementation] ?? $binding)) {
+                break;
+            }
+        }
     }
 
     /**
@@ -125,20 +189,15 @@ final class Container implements ContainerInterface
      * @param Binding $binding
      * @return void
      * @throws ReflectionException
-     * @psalm-suppress ArgumentTypeCoercion
      */
     private function initializeBinding(Binding $binding): void
     {
-        $class = $this->getReflectionClassFromImplementation($binding->getImplementation()); // @phpstan-ignore-line
+        $class = $this->getReflectionClassFromImplementation($binding->getImplementation());
         $args = [];
         $constructor = $class->getConstructor();
         if ($constructor !== null) {
             $extraArguments = $binding->getExtraArguments();
             foreach ($constructor->getParameters() as $parameter) {
-                /**
-                 * This method is supposed to return mixed.
-                 * @psalm-suppress MixedAssignment
-                 */
                 $args[] = $this->initializeParameter($parameter, $extraArguments);
             }
         }
@@ -171,7 +230,6 @@ final class Container implements ContainerInterface
         $parameterType = $parameter->getType();
 
         if (isset($extraArguments[$parameterName])) {
-            /** @var mixed|string $argument */
             $argument = $extraArguments[$parameterName];
             if ($parameterType !== null && is_string($argument) && isset($this->bindings[$argument])) {
                 return $this->get($argument);
@@ -205,5 +263,29 @@ final class Container implements ContainerInterface
             $previousExceptionCode,
             $previousException
         );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function has(string $id): bool
+    {
+        return isset($this->bindings[$id]);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function bind(string $id, string $implementation, ?array $extraArguments = null): void
+    {
+        $this->bindings[$id] = new Binding($implementation, $extraArguments);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getBindings(): array
+    {
+        return $this->bindings;
     }
 }

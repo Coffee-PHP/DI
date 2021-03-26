@@ -32,9 +32,3 @@ jobs:
 
       - name: Run test suite
         run: composer run-script coffeephp:exec:phpunit
-
-      - name: Run Psalm
-        run: composer run-script coffeephp:exec:psalm
-
-      - name: Run PHPStan
-        run: composer run-script coffeephp:exec:phpstan-analyse

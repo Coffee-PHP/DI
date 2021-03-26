@@ -24,11 +24,11 @@
     "require": {
         "php": ">=8.0",
         "ext-apcu": "*",
-        "psr/container": "^1.0"
+        "psr/container": "^2.0"
     },
     "require-dev": {
         "coffeephp/quality-tools": "1.*",
-        "roave/security-advisories": "dev-master"
+        "roave/security-advisories": "dev-latest"
     },
     "provide": {
         "psr/container-implementation": "1.0"
@@ -54,13 +54,8 @@
         "platform-check": false
     },
     "scripts": {
-        "coffeephp:exec:phpcbf": "coffeephp_exec_phpcbf",
-        "coffeephp:exec:phpcs": "coffeephp_exec_phpcs",
-        "coffeephp:exec:phpmd": "coffeephp_exec_phpmd",
-        "coffeephp:exec:phpstan-analyse": "coffeephp_exec_phpstan_analyse",
         "coffeephp:exec:phpunit": "coffeephp_exec_phpunit --testsuite unit",
         "coffeephp:exec:psalm": "coffeephp_exec_psalm",
-        "coffeephp:exec:psalm-alter": "coffeephp_exec_psalm_alter",
         "coffeephp:exec:publish": "coffeephp_exec_publish"
     }
 }

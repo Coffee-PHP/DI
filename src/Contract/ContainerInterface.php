@@ -25,8 +25,7 @@ declare(strict_types=1);
 
 namespace CoffeePhp\Di\Contract;
 
-use CoffeePhp\Di\Exception\DiBindingNotFoundException;
-use CoffeePhp\Di\Exception\DiException;
+use CoffeePhp\Di\Data\Binding;
 use Psr\Container\ContainerInterface as PsrContainerInterface;
 
 /**
@@ -38,24 +37,11 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 interface ContainerInterface extends PsrContainerInterface
 {
     /**
-     * Retrieve the shared instance of a class configured for the given identifier.
+     * Constructor for the bindings aware container implementation.
      *
-     * @param string $id
-     * @return object
-     * @throws DiBindingNotFoundException
-     * @throws DiException
-     * @noinspection PhpMissingParamTypeInspection
+     * @param array<string, Binding> $bindings
      */
-    public function get($id): object;
-
-    /**
-     * Get whether the current identifier is configured in the container.
-     *
-     * @param string $id
-     * @return bool
-     * @noinspection PhpMissingParamTypeInspection
-     */
-    public function has($id): bool;
+    public function __construct(array $bindings = []);
 
     /**
      * Bind the given implementation to the identifier.
@@ -65,4 +51,11 @@ interface ContainerInterface extends PsrContainerInterface
      * @param array|null $extraArguments A map of constructor argument names as keys and argument values as values.
      */
     public function bind(string $id, string $implementation, ?array $extraArguments = null): void;
+
+    /**
+     * Get the collection of currently configured bindings.
+     *
+     * @return array<string, Binding>
+     */
+    public function getBindings(): array;
 }
