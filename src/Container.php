@@ -242,7 +242,17 @@ final class Container implements ContainerInterface
         $previousException = null;
         if ($parameterType !== null) {
             try {
-                return $this->get((string)$parameterType);
+                $parameterTypeClass = (string)$parameterType;
+
+                if (isset($extraArguments[$parameterTypeClass])) {
+                    $argument = $extraArguments[$parameterTypeClass];
+                    if (is_string($argument) && isset($this->bindings[$argument])) {
+                        return $this->get($argument);
+                    }
+                    return $argument;
+                }
+
+                return $this->get($parameterTypeClass);
             } catch (DiException $e) {
                 $previousMessage = $e->getMessage();
                 $previousExceptionCode = (int)$e->getCode();
@@ -254,7 +264,7 @@ final class Container implements ContainerInterface
             return $parameter->getDefaultValue();
         }
 
-        if ($parameter->getType()?->allowsNull()) {
+        if ($parameterType?->allowsNull()) {
             return null;
         }
 

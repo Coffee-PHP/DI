@@ -184,5 +184,21 @@ final class ContainerTest extends TestCase
             'uniqueC',
             $container->get('uniqueDependencyD')->getC()
         );
+
+        $container->bind(
+            'testTypedArgumentNames',
+            DependencyD::class,
+            [
+                DependencyC::class => 'uniqueDependencyC',
+                DependencyB::class => DependencyB::class,
+                'string' => 'abc'
+            ]
+        );
+
+        /** @var DependencyD $typedTestDependency */
+        $typedTestDependency = $container->get('testTypedArgumentNames');
+        assertSame('uniqueC', $typedTestDependency->getC());
+        assertSame('B', $typedTestDependency->getB());
+        assertSame('abc', $typedTestDependency->getD());
     }
 }
